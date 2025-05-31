@@ -18,7 +18,7 @@ func NewUserRouter(userHandler *handler.UserHandler, tokenServ middleware.TokenS
 	r.Post("/", userHandler.CreateNewUser)
 	r.Put("/{login}", userHandler.ChangeUserRole)
 	r.Delete("/{login}", userHandler.DeleteUser)
-	r.Get("/name/{id}", userHandler.ChangeUserName)
+	r.Put("/name/{login}", userHandler.ChangeUserName)
 
 	return r
 }

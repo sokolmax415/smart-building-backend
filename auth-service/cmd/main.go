@@ -39,15 +39,14 @@ func main() {
 		cfg.Database.Name,
 	)
 
-	userRep, err := postgres.NewPostgresRepository(connectionString)
-	fmt.Println(connectionString)
+	userRep, err := postgres.NewPostgresUserRepository(connectionString)
 	if err != nil {
-		log.Fatalf("Error connect to DB: %v", err)
+		log.Fatalf("FATAL ERROR connect to DB: %v", err)
 	}
 
 	roleRep, err := postgres.NewRoleRepository(connectionString)
 	if err != nil {
-		log.Fatalf("Error connect to DB: %w", err)
+		log.Fatalf("FATAL ERROR connect to DB: %v", err)
 	}
 
 	tokenSer := token.NewJWTService(cfg.Token.AccessSecret, cfg.Token.RefreshSecret)
@@ -63,5 +62,5 @@ func main() {
 	if err := http.ListenAndServe(":8080", r); err != nil {
 		log.Fatalf("Error starting server: %v", err)
 	}
-
+	log.Printf("Hub-service is working")
 }

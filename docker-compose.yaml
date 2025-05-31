@@ -28,7 +28,46 @@ services:
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       ACCESS_SECRET: ${ACCESS_SECRET}
       REFRESH_SECRET: ${REFRESH_SECRET}
-    restart: on-failure:6
+    restart: on-failure:15
+    depends_on:
+      - db
+    networks:
+      - backend_network
+
+
+  hub_service:
+    build:
+      context: ./hub-service
+    container_name: hub-service
+    ports:
+      - "${HUB_SERVICE_PORT}:8080"
+    environment:
+      DB_HOST: db
+      DB_PORT: ${POSTGRES_PORT}
+      DB_NAME: ${POSTGRES_DB}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      ACCESS_SECRET: ${ACCESS_SECRET}
+    restart: on-failure:15
+    depends_on:
+      - db
+    networks:
+      - backend_network
+
+  client_service:
+    build:
+      context: ./client-service
+    container_name: client-service
+    ports:
+      - "${CLIENT_SERVICE_PORT}:8080"
+    environment:
+      DB_HOST: db
+      DB_PORT: ${POSTGRES_PORT}
+      DB_NAME: ${POSTGRES_DB}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      ACCESS_SECRET: ${ACCESS_SECRET}
+    restart: on-failure:20
     depends_on:
       - db
     networks:

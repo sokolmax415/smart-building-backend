@@ -3,8 +3,8 @@ package usecase
 import (
 	"auth-service/internal/entity"
 	"context"
-	"errors"
 	"fmt"
+	"log"
 	"time"
 )
 
@@ -29,27 +29,26 @@ func (usecase *AuthUsecase) Register(ctx context.Context, firstname, lastname, l
 	}
 
 	if isExist {
-		return fmt.Errorf("failed to register as %q: %w", login, entity.ErrUserAlreadyExists)
+		log.Printf("User with login=%s already exists", login)
+		return entity.ErrUserAlreadyExists
 	}
 
 	hashedPassword, err := usecase.hashingSer.HashPassword(password)
-
 	if err != nil {
-		return fmt.Errorf("failed to hash password for user '%q': %w", login, err)
+		return err
 	}
 
 	role := "user"
 	roleId, err := usecase.roleRep.GetIdByRole(ctx, role)
-
 	if err != nil {
-		return fmt.Errorf("failed to get roleID for role %q: %w", role, err)
+		return err
 	}
 
 	user := entity.User{Firstname: firstname, Lastname: lastname, Login: login, PasswordHash: hashedPassword, RoleId: roleId, RegistrationTime: time.Now()}
 	err = usecase.userRep.CreateNewUser(ctx, user)
 
 	if err != nil {
-		return fmt.Errorf("failed to create user %q: %w", login, err)
+		return err
 	}
 
 	return nil
@@ -64,28 +63,24 @@ func (usecase *AuthUsecase) Login(ctx context.Context, login, password string) (
 
 	err = usecase.hashingSer.CompareHashAndPassword(user.PasswordHash, password)
 
-	if errors.Is(err, entity.ErrInvalidPassword) {
-		return "", "", 0, fmt.Errorf("invalild user password for %q: %w", login, err)
-	}
-
 	if err != nil {
-		return "", "", 0, fmt.Errorf("failed to compare hash and password for user %q: %w", login, err)
+		return "", "", 0, entity.ErrInvalidPassword
 	}
 
 	role, err := usecase.roleRep.GetRoleById(ctx, user.RoleId)
 	if err != nil {
-		return "", "", 0, fmt.Errorf("failed to get user role %q: %w", login, err)
+		return "", "", 0, err
 	}
 
 	accessToken, expiresIn, err := usecase.tokenSer.CreateAccessToken(user.Id, role)
 
 	if err != nil {
-		return "", "", 0, fmt.Errorf("failed to create accessToken for user %q: %w", login, err)
+		return "", "", 0, err
 	}
 
 	refreshToken, err := usecase.tokenSer.CreateRefreshToken(user.Id, role)
 	if err != nil {
-		return "", "", 0, fmt.Errorf("failed to create refreshToken for user %q: %w", login, err)
+		return "", "", 0, err
 	}
 	return accessToken, refreshToken, expiresIn, nil
 }
@@ -95,13 +90,13 @@ func (usecase *AuthUsecase) Refresh(refreshToken string) (string, int64, error) 
 	id, role, err := usecase.tokenSer.ParseRefreshToken(refreshToken)
 
 	if err != nil {
-		return "", 0, fmt.Errorf("unathorized: %w", err)
+		return "", 0, err
 	}
 
 	accessToken, expiresIn, err := usecase.tokenSer.CreateAccessToken(id, role)
 
 	if err != nil {
-		return "", 0, fmt.Errorf("failed to create newAccessToken for UserId: %w ", err)
+		return "", 0, err
 	}
 	return accessToken, expiresIn, nil
 }

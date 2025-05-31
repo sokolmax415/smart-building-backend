@@ -3,7 +3,7 @@ package usecase
 import (
 	"auth-service/internal/entity"
 	"context"
-	"fmt"
+	"log"
 	"time"
 )
 
@@ -20,7 +20,7 @@ func NewUserUsecase(userRep UserRepository, roleRep RoleRepository, hashingSer H
 func (usecase *UserUsecase) GetUsersList(ctx context.Context) ([]entity.User, error) {
 	users, err := usecase.userRep.GetAllUsers(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get all users: %w", err)
+		return nil, err
 	}
 
 	return users, nil
@@ -30,7 +30,7 @@ func (usecase *UserUsecase) GetUsersList(ctx context.Context) ([]entity.User, er
 func (usecase *UserUsecase) GetUserInfo(ctx context.Context, login string) (entity.User, error) {
 	user, err := usecase.userRep.GetUserByLogin(ctx, login)
 	if err != nil {
-		return entity.User{}, fmt.Errorf("failed to get info about user %q: %w", login, err)
+		return entity.User{}, err
 	}
 
 	return user, nil
@@ -39,22 +39,23 @@ func (usecase *UserUsecase) GetUserInfo(ctx context.Context, login string) (enti
 func (usecase *UserUsecase) ChangeUserRole(ctx context.Context, login, newRole string) error {
 	roleId, err := usecase.roleRep.GetIdByRole(ctx, newRole)
 	if err != nil {
-		return fmt.Errorf("failed to get id by role: %w", err)
+		return err
 	}
 
 	isExist, err := usecase.userRep.IsUserExists(ctx, login)
 
 	if err != nil {
-		return fmt.Errorf("fail to check user existence %q: %w", login, err)
+		return err
 	}
 
 	if !isExist {
-		return fmt.Errorf("user not found %q: %w", login, entity.ErrUserNotExists)
+		log.Printf("User not found login=%s", login)
+		return entity.ErrUserNotExists
 	}
 
 	err = usecase.userRep.ChangeRoleByLogin(ctx, login, roleId)
 	if err != nil {
-		return fmt.Errorf("failed to change user's role %q: %w", login, err)
+		return err
 	}
 
 	return nil
@@ -63,16 +64,17 @@ func (usecase *UserUsecase) ChangeUserRole(ctx context.Context, login, newRole s
 func (usecase *UserUsecase) DeleteUser(ctx context.Context, login string) error {
 	isExist, err := usecase.userRep.IsUserExists(ctx, login)
 	if err != nil {
-		return fmt.Errorf("failed to check user %q existence: %w", login, err)
+		return err
 	}
 
 	if !isExist {
-		return fmt.Errorf("failed to delete user %q: %w", login, entity.ErrUserNotExists)
+		log.Printf("User not found login=%s", login)
+		return entity.ErrUserNotExists
 	}
 
 	err = usecase.userRep.DeleteUser(ctx, login)
 	if err != nil {
-		return fmt.Errorf("failed to delete user by login %q: %w", login, err)
+		return err
 	}
 
 	return nil
@@ -81,7 +83,7 @@ func (usecase *UserUsecase) DeleteUser(ctx context.Context, login string) error 
 func (usecase *UserUsecase) GetRoleName(ctx context.Context, roleId int64) (string, error) {
 	role, err := usecase.roleRep.GetRoleById(ctx, roleId)
 	if err != nil {
-		return "", fmt.Errorf("failed to get role by id: %w", err)
+		return "", err
 	}
 
 	return role, nil
@@ -90,31 +92,32 @@ func (usecase *UserUsecase) GetRoleName(ctx context.Context, roleId int64) (stri
 func (usecase *UserUsecase) CreateNewUser(ctx context.Context, firstname, lastname, login, password string) error {
 	isExist, err := usecase.userRep.IsUserExists(ctx, login)
 	if err != nil {
-		return fmt.Errorf("failed to check user %q existence: %w", login, err)
+		return err
 	}
 
 	if isExist {
-		return fmt.Errorf("failed to register as %q: %w", login, entity.ErrUserAlreadyExists)
+		log.Printf("User with login=%s already exists", login)
+		return entity.ErrUserAlreadyExists
 	}
 
 	hashedPassword, err := usecase.hashingSer.HashPassword(password)
 
 	if err != nil {
-		return fmt.Errorf("failed to hash password for user '%q': %w", login, err)
+		return err
 	}
 
 	role := "user"
 	roleId, err := usecase.roleRep.GetIdByRole(ctx, role)
 
 	if err != nil {
-		return fmt.Errorf("failed to get roleID for role %q: %w", role, err)
+		return err
 	}
 
 	user := entity.User{Firstname: firstname, Lastname: lastname, Login: login, PasswordHash: hashedPassword, RoleId: roleId, RegistrationTime: time.Now()}
 	err = usecase.userRep.CreateNewUser(ctx, user)
 
 	if err != nil {
-		return fmt.Errorf("failed to create user %q: %w", login, err)
+		return err
 	}
 
 	return nil
@@ -124,16 +127,17 @@ func (usecase *UserUsecase) ChangeUserName(ctx context.Context, firstname, lastn
 	isExist, err := usecase.userRep.IsUserExists(ctx, login)
 
 	if err != nil {
-		return fmt.Errorf("failed to check user %q existence: %w", login, err)
+		return err
 	}
 
 	if !isExist {
-		return fmt.Errorf("failed to change user(user %q not exist): %w", login, err)
+		log.Printf("User not found login=%s", login)
+		return entity.ErrUserNotExists
 	}
 
-	err = usecase.userRep.ChangeUserName(ctx, firstname, lastname, login)
+	err = usecase.userRep.ChangeUserName(ctx, login, firstname, lastname)
 	if err != nil {
-		return fmt.Errorf("failed to change user name %q: %w", login, err)
+		return err
 	}
 
 	return nil

@@ -1,6 +1,7 @@
 package token
 
 import (
+	"log"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -43,6 +44,7 @@ func (ser *JWTService) CreateAccessToken(id int64, role string) (string, int64, 
 	signedAccessToken, err := accessToken.SignedString(ser.secretAccessTokenKey)
 
 	if err != nil {
+		log.Printf("ERROR IN CreateAccessToken: %v", err)
 		return "", 0, ErrSignAccessToken
 	}
 	expiresIn := int64(expiresAt.Sub(now).Seconds())
@@ -66,6 +68,7 @@ func (ser *JWTService) CreateRefreshToken(id int64, role string) (string, error)
 	signedRefreshToken, err := refreshToken.SignedString(ser.secretRefreshTokenKey)
 
 	if err != nil {
+		log.Printf("ERROR IN CreateRefreshToken: %v", err)
 		return "", ErrSignRefreshToken
 	}
 
@@ -77,22 +80,25 @@ func (ser *JWTService) ParseAccessToken(accessToken string) (int64, string, erro
 	secret := ser.secretAccessTokenKey
 	token, err := jwt.ParseWithClaims(accessToken, &Claims{}, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			log.Printf("ERROR IN ParseAccessToken(sign method)")
 			return nil, ErrSigningMethod
 		}
 		return secret, nil
 	})
 
 	if err != nil {
+		log.Printf("ERROR IN ParseAccessToken: %v", err)
 		return 0, "", ErrParseAccessToken
 	}
 
 	claims, ok := token.Claims.(*Claims)
-
 	if !ok || !token.Valid {
+		log.Printf("ERROR IN ParseAccessToken(validation)")
 		return 0, "", ErrValidateAccessToken
 	}
 
 	if claims.Subject != "access_token" {
+		log.Printf("ERROR IN ParseAccessToken(sub): %v", ok)
 		return 0, "", ErrTokenSub
 	}
 
@@ -104,6 +110,7 @@ func (ser *JWTService) ParseRefreshToken(accessToken string) (int64, string, err
 
 	token, err := jwt.ParseWithClaims(accessToken, &Claims{}, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			log.Printf("ERROR IN ParseRefreshToken(sign method)")
 			return nil, ErrSigningMethod
 		}
 		return secret, nil
@@ -116,10 +123,12 @@ func (ser *JWTService) ParseRefreshToken(accessToken string) (int64, string, err
 	claims, ok := token.Claims.(*Claims)
 
 	if !ok || !token.Valid {
+		log.Printf("ERROR IN ParseRefreshToken(validation)")
 		return 0, "", ErrValidateRefreshToken
 	}
 
 	if claims.Subject != "refresh_token" {
+		log.Printf("ERROR IN ParseRefreshToken(sub)")
 		return 0, "", ErrSigningMethod
 	}
 

@@ -7,6 +7,7 @@ import (
 	"auth-service/internal/entity"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 )
 
@@ -88,7 +89,12 @@ func (handler *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	accessToken, refreshToken, expiresIn, err := handler.authUsecase.Login(r.Context(), loginRequest.Login, loginRequest.Password)
 
 	if err != nil {
-		if errors.Is(err, entity.ErrUserNotExists) || errors.Is(err, entity.ErrInvalidPassword) {
+		log.Printf("Testing err: %v", err)
+		if errors.Is(err, entity.ErrUserNotExists) {
+			resp.WriteErrorResponse(w, http.StatusUnauthorized, "Login or password is incorrect")
+			return
+		}
+		if errors.Is(err, entity.ErrInvalidPassword) {
 			resp.WriteErrorResponse(w, http.StatusUnauthorized, "Login or password is incorrect")
 			return
 		}

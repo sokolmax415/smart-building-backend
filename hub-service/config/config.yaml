@@ -1,0 +1,12 @@
+server:
+  port: ${HUB_SERVICE_PORT}
+
+database:
+  host: ${DB_HOST}
+  port: ${DB_PORT}
+  name: ${POSTGRES_DB}
+  user: ${POSTGRES_USER}
+  password: ${POSTGRES_PASSWORD}
+
+token:
+  access_secret: ${ACCESS_SECRET}

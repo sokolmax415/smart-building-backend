@@ -2,6 +2,7 @@ package hash
 
 import (
 	"errors"
+	"log"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -22,6 +23,7 @@ func (bc *BcryptService) HashPassword(password string) (string, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 
 	if err != nil {
+		log.Printf("ERROR IN HashPassword: %v", err)
 		return "", ErrHashPassword
 	}
 
@@ -33,10 +35,12 @@ func (bc *BcryptService) CompareHashAndPassword(hash string, password string) er
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 
 	if err == bcrypt.ErrMismatchedHashAndPassword {
+		log.Printf("Invalid password: %v", err)
 		return ErrInvalidPassword
 	}
 
 	if err != nil {
+		log.Printf("ERROR IN CompareHashAndPassword: %v", err)
 		return ErrComparePassword
 	}
 
